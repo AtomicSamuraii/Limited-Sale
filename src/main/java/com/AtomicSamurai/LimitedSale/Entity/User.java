@@ -2,13 +2,19 @@ package com.AtomicSamurai.LimitedSale.Entity;
 
 
 import jakarta.persistence.*;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name="users")
-public class User {
+public class User implements UserDetails {
     @Id   //primary key
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -75,5 +81,20 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
     }
 }

@@ -6,11 +6,13 @@ import com.AtomicSamurai.LimitedSale.Repository.UserRepository;
 import com.AtomicSamurai.LimitedSale.Security.JwtService;
 import com.AtomicSamurai.LimitedSale.dto.LoginRequest;
 import com.AtomicSamurai.LimitedSale.dto.RegisterRequest;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -18,11 +20,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService){
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager){
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
     }
 
     public void register(RegisterRequest request){
@@ -38,10 +42,14 @@ public class AuthService {
     }
 
     public String login(LoginRequest request){
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(()-> new IllegalArgumentException("Invalid Credentials"));
-        if(!passwordEncoder.matches(request.getPassword(),user.getPasswordHash())){
-            throw new IllegalArgumentException("Invalid Credentials");
-        }
+
+        // create an authentication object
+        Authentication authentication = new UsernamePasswordAuthenticationToken(request.getEmail(),request.getPassword());
+
+        // authenticate the user using authentication manager
+        Authentication authenticated = authenticationManager.authenticate(authentication);
+
+        User user = (User) authenticated.getPrincipal();
 
         List<String> roles = user.getRoles().stream().map(Enum::name).toList();
         return jwtService.generateToken(user.getEmail(),roles);
