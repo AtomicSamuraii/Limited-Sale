@@ -18,4 +18,11 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(404).body(response);
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ExceptionResponse> handleIllegalArgument(IllegalArgumentException ex){
+        ExceptionResponse response = new ExceptionResponse(400, ex.getMessage(), LocalDateTime.now());
+
+        return  ResponseEntity.status(400).body(response);
+    }
 }
