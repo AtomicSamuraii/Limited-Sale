@@ -27,6 +27,10 @@ public class FlashSaleService {
             throw new IllegalArgumentException("Start Time Cannot be Greater or Equal to End Time");
         }
 
+        if(flashSaleRepository.existsOverlappingSale(request.getProductId(), request.getSaleStartTime(), request.getSaleEndTime())){
+            throw new IllegalArgumentException("Product already has a FlashSale during this time");
+        }
+
         FlashSale flashSale = new FlashSale();
         flashSale.setProduct(product);
         flashSale.setSalePrice(request.getSalePrice());
