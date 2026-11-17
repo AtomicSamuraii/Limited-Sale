@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 public interface FlashSaleRepository extends JpaRepository<FlashSale,Long> {
 
@@ -19,5 +20,5 @@ public interface FlashSaleRepository extends JpaRepository<FlashSale,Long> {
     """)
     boolean existsOverlappingSale(@Param("productId") Long productId, @Param("newStartTime") LocalDateTime newStartTime, @Param("newEndTime") LocalDateTime newEndTime);
 
-
+    Optional<FlashSale> findById(Long id);
 }
