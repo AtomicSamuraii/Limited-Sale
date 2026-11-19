@@ -42,44 +42,37 @@ public class OrderService {
         //find the flash sale by id
         FlashSale flashSale = flashSaleRepository.findById(flashSaleId).orElseThrow(() -> new EntityNotFoundException("Sale not Found!"));
 
-        LocalDateTime startTime = flashSale.getSaleStartTime();
-        LocalDateTime endTime = flashSale.getSaleEndTime();
         LocalDateTime currentTime = LocalDateTime.now();
 
-        if (currentTime.isBefore(startTime) ||
-                !currentTime.isBefore(endTime)) {
+        Long quantity = request.getQuantity();
+
+        int rowsUpdated = flashSaleRepository.deductStockIfAvailable(flashSaleId, quantity, currentTime);
+
+        if (rowsUpdated == 0) {
             throw new IllegalArgumentException(
-                    "Flash sale is not currently active."
+                    "Flash sale is inactive or insufficient stock available."
             );
         }
 
-            Long quantity = request.getQuantity();
-            Long saleStock = flashSale.getSaleStock();
-            if(saleStock < quantity){
-                throw new IllegalArgumentException("Insufficient stock available");
-            }
-            BigDecimal unitPrice = flashSale.getSalePrice();
-            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal unitPrice = flashSale.getSalePrice();
+        BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
 
-            Long updatedQuantity = saleStock - quantity;
-            flashSale.setSaleStock(updatedQuantity);
+        //retrieve the authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user =  userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not Found!"));
 
-            //retrieve the authenticated user
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
-            User user =  userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not Found!"));
+        //creating the order (inserting to db)
+        Order newOrder = new Order();
+        newOrder.setUser(user);
+        newOrder.setFlashSale(flashSale);
+        newOrder.setQuantity(quantity);
+        newOrder.setUnitPrice(unitPrice);
+        newOrder.setTotalPrice(totalPrice);
+        newOrder.setStatus(OrderStatus.CONFIRMED);
 
-            //creating the order (inserting to db)
-            Order newOrder = new Order();
-            newOrder.setUser(user);
-            newOrder.setFlashSale(flashSale);
-            newOrder.setQuantity(quantity);
-            newOrder.setUnitPrice(unitPrice);
-            newOrder.setTotalPrice(totalPrice);
-            newOrder.setStatus(OrderStatus.CONFIRMED);
-
-            orderRepository.save(newOrder);
-            return generateResponse(newOrder);
+        orderRepository.save(newOrder);
+        return generateResponse(newOrder);
 
     }
 
